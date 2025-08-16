@@ -3,3 +3,8 @@ __pycache__/
 .env
 *.log
 minikube*
+.venv/
+__pycache__/
+.env
+*.log
+minikube*
