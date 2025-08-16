@@ -1,0 +1,52 @@
+---
+- name: Install k8s-infra and optional rolldice app
+  hosts: local
+  gather_facts: false
+  vars_files:
+    - group_vars/all.yml
+  environment:
+    KUBECONFIG: "{{ kubeconfig }}"
+    HELM_KUBECONFIG: "{{ kubeconfig }}"
+  tasks:
+    - name: Ensure namespace exists
+      ansible.builtin.command: >
+        kubectl --kubeconfig {{ kubeconfig }} create namespace {{ k8s_namespace }}
+      register: ns_out
+      failed_when: false
+      changed_when: "'created' in ns_out.stdout"
+
+    - name: Add SigNoz Helm repo
+      ansible.builtin.shell: |
+        helm repo add signoz https://charts.signoz.io 2>/dev/null || true
+        helm repo update
+      args: { executable: /bin/bash }
+
+    - name: Render Helm values override
+      ansible.builtin.template:
+        src: templates/override-values.yaml.j2
+        dest: "{{ playbook_dir }}/override-values.yaml"
+        mode: '0644'
+
+    - name: Install/upgrade K8S Infra
+      ansible.builtin.command: >
+        helm upgrade --install {{ release_name }} signoz/k8s-infra
+        --kubeconfig {{ kubeconfig }}
+        -n {{ k8s_namespace }} -f {{ playbook_dir }}/override-values.yaml
+      register: helm_up
+
+    - name: Wait for k8s-infra pods to be Ready
+      ansible.builtin.command: >
+        kubectl --kubeconfig {{ kubeconfig }} wait --for=condition=Ready pod
+        -l "app.kubernetes.io/name in (k8s-infra-otel-agent, k8s-infra-otel-deployment)"
+        -n {{ k8s_namespace }} --timeout=180s
+
+    - name: Deploy rolldice demo app (optional)
+      when: deploy_rolldice | bool
+      block:
+        - name: Apply rolldice deployment & service
+          ansible.builtin.command: >
+            kubectl --kubeconfig {{ kubeconfig }} apply -n {{ k8s_namespace }} -f {{ playbook_dir }}/../k8s/rolldice
+
+        - name: Wait for rolldice to be Ready
+          ansible.builtin.command: >
+            kubectl --kubeconfig {{ kubeconfig }} rollout status deploy/rolldice -n {{ k8s_namespace }} --timeout=180s

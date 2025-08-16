@@ -1,0 +1,16 @@
+# ---------- SigNoz / network ----------
+signoz_host_ip: "192.168.1.50"
+signoz_otlp_grpc_port: 4317
+
+# ---------- K8s / Helm ----------
+k8s_namespace: "observability"
+release_name: "k8s-infra"
+kubeconfig: "/mnt/c/Users/ksuma/.kube/config"   # <-- POINT HERE
+
+# ---------- Tagging ----------
+cluster_name: "vsphere-lab"
+deployment_env: "dev"
+
+# ---------- Rolldice ----------
+rolldice_image: "docker.io/<your_dockerhub_user>/rolldice:1.0.0"
+deploy_rolldice: true

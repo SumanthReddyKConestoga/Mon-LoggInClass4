@@ -1,0 +1,12 @@
+- name: Remove Helm Chart for K8sInfra
+  hosts: localhost
+  connection: local
+  become: true
+  tasks:
+    - name: Uninstall Helm chart
+      community.kubernetes.helm:
+        name: k8sinfra
+        state: absent
+        release_namespace: default
+      environment:
+        KUBECONFIG: /home/admin0/.kube/config

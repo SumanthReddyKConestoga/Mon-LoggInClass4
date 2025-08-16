@@ -1,0 +1,30 @@
+global:
+  cloud: others
+  clusterName: vsphere-lab
+  deploymentEnvironment: dev
+
+# Upstream OpenTelemetry Collector (SigNoz on TrueNAS)
+otelCollectorEndpoint: "192.168.1.50:4317"
+otelInsecure: true
+
+# Enable essential pipelines to ship K8s metrics + logs + events out to SigNoz
+presets:
+  otlpExporter:
+    enabled: true        # REQUIRED to send data upstream
+  hostMetrics:
+    enabled: true
+    collectionInterval: 30s
+  kubeletMetrics:
+    enabled: true
+  kubernetesAttributes:
+    enabled: true
+  clusterMetrics:
+    enabled: true
+  k8sEvents:
+    enabled: true
+  logsCollection:
+    enabled: true
+    blacklist:
+      enabled: true
+      namespaces:
+        - kube-system

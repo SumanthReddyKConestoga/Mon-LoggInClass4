@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rolldice
+  labels:
+    app: rolldice
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rolldice
+  template:
+    metadata:
+      labels:
+        app: rolldice
+    spec:
+      containers:
+        - name: rolldice
+          image: "{{ROLLED_IMAGE}}"  # replaced by kustomize or manual search/replace
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: HOST_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: K8S_POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: K8S_POD_UID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
+            - name: OTEL_EXPORTER_OTLP_INSECURE
+              value: "true"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "$(HOST_IP):4317"
+            - name: OTEL_SERVICE_NAME
+              value: "rolldice"
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "service.name=rolldice,deployment.environment={{DEPLOY_ENV}},k8s.pod.ip=$(K8S_POD_IP),k8s.pod.uid=$(K8S_POD_UID)"
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet: { path: /healthz, port: http }
+            initialDelaySeconds: 5
+            periodSeconds: 5

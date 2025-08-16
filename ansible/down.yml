@@ -1,0 +1,24 @@
+---
+- name: Remove rolldice and k8s-infra
+  hosts: local
+  gather_facts: false
+  vars_files:
+    - group_vars/all.yml
+  environment:
+    KUBECONFIG: "{{ kubeconfig }}"
+    HELM_KUBECONFIG: "{{ kubeconfig }}"
+  tasks:
+    - name: Remove rolldice (ignore if absent)
+      ansible.builtin.shell: |
+        kubectl --kubeconfig {{ kubeconfig }} delete -n {{ k8s_namespace }} -f {{ playbook_dir }}/../k8s/rolldice --ignore-not-found
+      args: { executable: /bin/bash }
+
+    - name: Uninstall k8s-infra
+      ansible.builtin.shell: |
+        helm uninstall {{ release_name }} -n {{ k8s_namespace }} --kubeconfig {{ kubeconfig }} 2>/dev/null || true
+      args: { executable: /bin/bash }
+
+    - name: Delete namespace (optional cleanup)
+      ansible.builtin.shell: |
+        kubectl --kubeconfig {{ kubeconfig }} delete namespace {{ k8s_namespace }} --ignore-not-found
+      args: { executable: /bin/bash }
